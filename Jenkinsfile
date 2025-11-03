@@ -6,12 +6,14 @@ pipeline {
             agent {
                 docker {
                     image 'node:22-alpine'
+                    reuseNode true
                 }
             }
             steps {
-                echo 'Hello from Github'
                 sh '''
-                    echo "NPM Version: npm --version"
+                    npm ci
+                    npm run build
+                    ls -la
                 '''
             }
         }
