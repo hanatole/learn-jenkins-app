@@ -49,7 +49,7 @@ pipeline {
                     sleep 10
                     npx playwright test --reporter=html
                 '''
-            }x
+            }
         }
     }
 
