@@ -9,6 +9,7 @@ pipeline {
                     reuseNode true
                 }
             }
+            
             steps {
                 sh '''
                     npm ci
@@ -16,46 +17,50 @@ pipeline {
                     ls -la
                 '''
             }
+
+            post{
+                always{
+                    junit 'jest-results/junit.xml'
+                }
+            }
         }
 
         stage("Test"){
-            agent {
-                docker{
-                    image "node:22-alpine"
-                    reuseNode true
+            parallel{
+                stage("Unittest"){
+                    agent {
+                        docker{
+                            image "node:22-alpine"
+                            reuseNode true
+                        }
+                    }
+
+                    steps{
+                        sh '''
+                            test -f build/index.html
+                            npm test
+                        '''
+                    }
+                }
+
+                stage("E2E"){
+                    agent {
+                        docker{
+                            image "mcr.microsoft.com/playwright:v1.39.0-jammy"
+                            reuseNode true
+                        }
+                    }
+
+                    steps{
+                        sh '''
+                            npm install serve
+                            node_modules/.bin/serve -s build &
+                            sleep 10
+                            npx playwright test --reporter=html
+                        '''
+                    }
                 }
             }
-
-            steps{
-                sh '''
-                    test -f build/index.html
-                    npm test
-                '''
-            }
-        }
-
-        stage("E2E"){
-            agent {
-                docker{
-                    image "mcr.microsoft.com/playwright:v1.39.0-jammy"
-                    reuseNode true
-                }
-            }
-
-            steps{
-                sh '''
-                    npm install serve
-                    node_modules/.bin/serve -s build &
-                    sleep 10
-                    npx playwright test --reporter=html
-                '''
-            }
-        }
-    }
-
-    post{
-        always{
-            junit 'jest-results/junit.xml'
         }
     }
 }
